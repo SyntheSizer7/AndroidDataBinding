@@ -1,12 +1,10 @@
 package com.synthesizer7.androiddatabinding.view.chatroom
 
 import android.arch.lifecycle.Observer
+import android.databinding.DataBindingUtil
 import android.os.Bundle
 import android.support.v4.app.Fragment
-import android.support.v4.content.ContextCompat
 import android.support.v7.widget.LinearLayoutManager
-import android.text.Editable
-import android.text.TextWatcher
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -15,6 +13,7 @@ import com.google.firebase.database.FirebaseDatabase
 import com.synthesizer7.androiddatabinding.R
 import com.synthesizer7.androiddatabinding.api.local.UserDataManagerImpl
 import com.synthesizer7.androiddatabinding.api.repo.ChatRepoImpl
+import com.synthesizer7.androiddatabinding.databinding.FragmentChatRoomBinding
 import com.synthesizer7.androiddatabinding.extenstions.getViewModel
 import com.synthesizer7.androiddatabinding.usecase.ChatUseCaseImpl
 import com.synthesizer7.androiddatabinding.view.chatroom.adapter.ChatRoomMessageAdapter
@@ -42,7 +41,13 @@ class ChatRoomFragment : Fragment() {
     }
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
-        return inflater.inflate(R.layout.fragment_chat_room, container, false)
+        val view = DataBindingUtil.inflate<FragmentChatRoomBinding>(inflater,
+                R.layout.fragment_chat_room, container, false).apply {
+            model = viewModel
+        }
+        view.setLifecycleOwner(this)
+
+        return view.root
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
@@ -61,49 +66,14 @@ class ChatRoomFragment : Fragment() {
             this.adapter = chatMessageAdapter
         }
 
-        sendButton.setOnClickListener {
-            if (messageEditText.text.isNotEmpty()) {
-                viewModel.sendMessage(message = messageEditText.text.toString())
-                messageEditText.setText("")
-            }
-        }
-
         messageEditText.onFocusChangeListener = View.OnFocusChangeListener { _, hasFocus ->
             if (hasFocus) {
                 messageRecycleView.scrollToPosition(chatMessageAdapter.itemCount - 1)
             }
         }
-
-        messageEditText.addTextChangedListener(object : TextWatcher {
-            override fun afterTextChanged(s: Editable?) {
-            }
-
-            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {
-            }
-
-            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
-                viewModel.trypingMessage(count = count)
-            }
-        })
     }
 
     private fun bindingViewModel() {
-        viewModel.isLoading.observe(this, Observer { isLoading ->
-            if (isLoading == true) {
-                showLoadingView()
-            } else {
-                hideLoadingView()
-            }
-        })
-
-        viewModel.isContentReady.observe(this, Observer { isContentReady ->
-            if (isContentReady == true) {
-                showContentView()
-            } else {
-                hideContentView()
-            }
-        })
-
         viewModel.messageList.observe(this, Observer { messageList ->
             messageList?.let {
                 chatMessageAdapter.setListData(list = it)
@@ -115,31 +85,5 @@ class ChatRoomFragment : Fragment() {
         viewModel.toastMessage.observe(this, Observer { toastMessage ->
             Toast.makeText(context, toastMessage, Toast.LENGTH_SHORT).show()
         })
-
-        viewModel.isCanSendMessage.observe(this, Observer { isCanSendMessage ->
-            if (isCanSendMessage == true) {
-                sendButton.isEnabled = true
-                sendButton.background = ContextCompat.getDrawable(context!!, R.drawable.send_button_background)
-            } else {
-                sendButton.isEnabled = false
-                sendButton.background = ContextCompat.getDrawable(context!!, R.drawable.send_button_disable_background)
-            }
-        })
-    }
-
-    private fun showLoadingView() {
-        progressView.visibility = View.VISIBLE
-    }
-
-    private fun hideLoadingView() {
-        progressView.visibility = View.GONE
-    }
-
-    private fun showContentView() {
-        contentView.visibility = View.VISIBLE
-    }
-
-    private fun hideContentView() {
-        contentView.visibility = View.GONE
     }
 }

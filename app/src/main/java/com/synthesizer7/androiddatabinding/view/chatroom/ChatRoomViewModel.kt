@@ -15,8 +15,8 @@ class ChatRoomViewModel(val chatUseCase: ChatUseCase,
 
     val toastMessage = MutableLiveData<String>()
     val isLoading = MutableLiveData<Boolean>()
-    val isCanSendMessage = MutableLiveData<Boolean>()
-    val isContentReady = MutableLiveData<Boolean>()
+    val message = MutableLiveData<String>()
+    var isContentReady = MutableLiveData<Boolean>()
     val messageList = MutableLiveData<MutableList<Message>>()
 
     private val compositeDisposable by lazy {
@@ -62,22 +62,22 @@ class ChatRoomViewModel(val chatUseCase: ChatUseCase,
                 .addTo(composite = compositeDisposable)
     }
 
-    fun sendMessage(message: String) {
-        chatUseCase.sendMessage(senderId = userDataManager.getUserId(),
-                name = userDataManager.getUserName(),
-                message = message)
-                .subscribeOn(Schedulers.io())
-                .doOnSuccess {
-                    toastMessage.value = "Sent message success"
-                }
-                .doOnError {
-                    toastMessage.value = "Sent message failed"
-                }
-                .subscribe()
-                .addTo(composite = compositeDisposable)
+    fun sendMessage() {
+        if (message.value?.isNotEmpty() == true) {
+            chatUseCase.sendMessage(senderId = userDataManager.getUserId(),
+                    name = userDataManager.getUserName(),
+                    message = message.value!!)
+                    .subscribeOn(Schedulers.io())
+                    .doOnSuccess {
+                        toastMessage.value = "Sent message success"
+                    }
+                    .doOnError {
+                        toastMessage.value = "Sent message failed"
+                    }
+                    .subscribe()
+                    .addTo(composite = compositeDisposable)
+            message.value = ""
+        }
     }
 
-    fun trypingMessage(count: Int) {
-        isCanSendMessage.value = count > 0
-    }
 }
